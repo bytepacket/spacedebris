@@ -72,6 +72,66 @@ def calculate_orbit(tle1, tle2):
         print(f"Error calculating orbit: {e}")
         return None, None, None
 
+def get_satellite_statistics(tle_data):
+    """Get statistics about satellites for UI display."""
+    stats = {
+        'total': 0,
+        'low': 0,      # 0-30° or low altitude
+        'medium': 0,   # 30-60°
+        'high': 0,     # 60-90°
+        'polar': 0,    # 90-120°
+        'retrograde': 0,  # 120-180°
+        'inclinations': []
+    }
+    
+    for sat_name, tle in tle_data.items():
+        tle1, tle2 = tle
+        if tle1[0] != "1":
+            continue
+        
+        try:
+            inclination = float(tle2[9:17])  # Inclination in degrees
+            stats['inclinations'].append(inclination)
+            stats['total'] += 1
+            
+            if 0 <= inclination < 30:
+                stats['low'] += 1
+            elif 30 <= inclination < 60:
+                stats['medium'] += 1
+            elif 60 <= inclination < 90:
+                stats['high'] += 1
+            elif 90 <= inclination < 120:
+                stats['polar'] += 1
+            else:  # 120-180
+                stats['retrograde'] += 1
+        except:
+            continue
+    
+    # Calculate percentages
+    if stats['total'] > 0:
+        stats['low_pct'] = (stats['low'] / stats['total']) * 100
+        stats['medium_pct'] = (stats['medium'] / stats['total']) * 100
+        stats['high_pct'] = (stats['high'] / stats['total']) * 100
+        stats['polar_pct'] = (stats['polar'] / stats['total']) * 100
+        stats['retrograde_pct'] = (stats['retrograde'] / stats['total']) * 100
+    else:
+        stats['low_pct'] = stats['medium_pct'] = stats['high_pct'] = stats['polar_pct'] = stats['retrograde_pct'] = 0
+    
+    return stats
+
+def get_inclination_color(inclination):
+    """Get color based on inclination angle."""
+    if 0 <= inclination < 30:
+        return (1.0, 0.0, 0.0, 1.0)  # Red - Equatorial
+    elif 30 <= inclination < 60:
+        return (1.0, 0.65, 0.0, 1.0)  # Orange - Low
+    elif 60 <= inclination < 90:
+        return (1.0, 1.0, 0.0, 1.0)  # Yellow - Medium
+    elif 90 <= inclination < 120:
+        return (0.0, 1.0, 0.0, 1.0)  # Green - High
+    else:  # 120-180
+        return (0.0, 0.5, 1.0, 1.0)  # Blue - Retrograde
+
 def plot_satellites_pyvista(tle_data):
     """Plot satellite orbits around PyVista Earth."""
     # Create PyVista plotter with space background
